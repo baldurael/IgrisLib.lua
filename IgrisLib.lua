@@ -1,224 +1,127 @@
--- Load Rayfield UI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+--// GUI Setup
+local Player = game.Players.LocalPlayer
+local ScreenGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
+ScreenGui.Name = "CustomHub"
 
--- Services
-local Players = game:GetService("Players")
-local UserInputService = game:GetService("UserInputService")
-local RunService = game:GetService("RunService")
-local player = Players.LocalPlayer
-local character = player.Character or player.CharacterAdded:Wait()
-local hrp = character:WaitForChild("HumanoidRootPart")
-local humanoid = character:WaitForChild("Humanoid")
+local MainFrame = Instance.new("Frame", ScreenGui)
+MainFrame.Size = UDim2.new(0, 500, 0, 300)
+MainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
+MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
+MainFrame.BorderSizePixel = 0
+MainFrame.Active = true
+MainFrame.Draggable = true
 
--- Variables
-local SavedLocations = {}
-local currentLocationName = ""
-local flying = false
-local flyVelocity, flyGyro
+local Tabs = {"Main", "Visual", "Bonus"}
+local Buttons = {}
+local ContentFrame = Instance.new("Frame", MainFrame)
+ContentFrame.Size = UDim2.new(1, -100, 1, -10)
+ContentFrame.Position = UDim2.new(0, 90, 0, 10)
+ContentFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
+ContentFrame.BorderSizePixel = 0
 
--- Window
-local Window = Rayfield:CreateWindow({
-    Name = "Igris hub - Steal A Script🥷 https://discord.gg/dBp5KpsC",
-    LoadingTitle = "Igris Hub",
-    LoadingSubtitle = "by rip_Igrissz",
-    ConfigurationSaving = {
-        Enabled = true,
-        FolderName = "IgrisHub",
-        FileName = "Config"
-    },
-    Discord = {Enabled = false},
-    KeySystem = false
-})
+--// Tab Buttons
+for i, tabName in ipairs(Tabs) do
+	local TabBtn = Instance.new("TextButton", MainFrame)
+	TabBtn.Size = UDim2.new(0, 80, 0, 30)
+	TabBtn.Position = UDim2.new(0, 5, 0, 10 + (i - 1) * 35)
+	TabBtn.Text = tabName
+	TabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
+	TabBtn.TextColor3 = Color3.new(1, 1, 1)
+	TabBtn.BorderSizePixel = 0
 
----------------------
--- Main Tab
----------------------
-local MainTab = Window:CreateTab("Main", 4483362458)
+	Buttons[tabName] = TabBtn
+end
 
-MainTab:CreateInput({
-    Name = "Location Name",
-    PlaceholderText = "Enter location name",
-    RemoveTextAfterFocusLost = false,
-    Callback = function(Text)
-        currentLocationName = Text
-    end,
-})
+--// Utility
+function ClearContent()
+	for _, child in ipairs(ContentFrame:GetChildren()) do
+		if not child:IsA("UIListLayout") then
+			child:Destroy()
+		end
+	end
+end
 
-MainTab:CreateButton({
-    Name = "Set Location (with ESP)",
-    Callback = function()
-        if currentLocationName ~= "" then
-            SavedLocations[currentLocationName] = hrp.Position
-            local part = Instance.new("Part", workspace)
-            part.Anchored = true
-            part.CanCollide = false
-            part.Size = Vector3.new(2,2,2)
-            part.Position = hrp.Position
-            part.Material = Enum.Material.Neon
-            part.Color = Color3.fromRGB(255, 0, 0)
-            part.Transparency = 0.3
-            part.Name = "ESP_" .. currentLocationName
+function CreateButton(name, callback)
+	local Btn = Instance.new("TextButton", ContentFrame)
+	Btn.Size = UDim2.new(1, -10, 0, 30)
+	Btn.Text = name
+	Btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
+	Btn.TextColor3 = Color3.new(1,1,1)
+	Btn.BorderSizePixel = 0
+	Btn.MouseButton1Click:Connect(callback)
+end
 
-            local gui = Instance.new("BillboardGui", part)
-            gui.Size = UDim2.new(0,200,0,50)
-            gui.AlwaysOnTop = true
-            local label = Instance.new("TextLabel", gui)
-            label.Size = UDim2.new(1,0,1,0)
-            label.BackgroundTransparency = 1
-            label.Text = currentLocationName
-            label.TextColor3 = Color3.new(1,1,1)
-            label.TextScaled = true
-        end
-    end,
-})
+--// GUI Scale Slider
+local function CreateSlider(name)
+	local Text = Instance.new("TextLabel", ContentFrame)
+	Text.Text = name
+	Text.Size = UDim2.new(1, -10, 0, 20)
+	Text.TextColor3 = Color3.new(1,1,1)
+	Text.BackgroundTransparency = 1
 
-local locDropdown = MainTab:CreateDropdown({
-    Name = "Saved Locations",
-    Options = {},
-    CurrentOption = "",
-    Callback = function(Value)
-        currentLocationName = Value
-    end,
-})
+	local Slider = Instance.new("TextButton", ContentFrame)
+	Slider.Size = UDim2.new(1, -10, 0, 30)
+	Slider.Text = "Adjust GUI Scale"
+	Slider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
+	Slider.TextColor3 = Color3.new(1,1,1)
+	Slider.MouseButton1Click:Connect(function()
+		MainFrame.Size = MainFrame.Size + UDim2.new(0, 20, 0, 20)
+	end)
+end
 
-MainTab:CreateButton({
-    Name = "🔄 Refresh Locations",
-    Callback = function()
-        local keys = {}
-        for name in pairs(SavedLocations) do
-            table.insert(keys, name)
-        end
-        locDropdown:Refresh(keys)
-    end,
-})
+--// Tab Functions
+local function OpenTab(tabName)
+	ClearContent()
 
-MainTab:CreateButton({
-    Name = "Goto Location",
-    Callback = function()
-        if currentLocationName ~= "" and SavedLocations[currentLocationName] then
-            hrp.CFrame = CFrame.new(SavedLocations[currentLocationName])
-        end
-    end,
-})
+	if tabName == "Main" then
+		CreateButton("Exit", function()
+			ScreenGui:Destroy()
+		end)
 
-MainTab:CreateButton({
-    Name = "Goto Random Player",
-    Callback = function()
-        local players = {}
-        for _, p in ipairs(Players:GetPlayers()) do
-            if p ~= player and p.Character and p.Character:FindFirstChild("HumanoidRootPart") then
-                table.insert(players, p)
-            end
-        end
-        if #players > 0 then
-            local chosen = players[math.random(1, #players)]
-            hrp.CFrame = chosen.Character.HumanoidRootPart.CFrame + Vector3.new(0, 5, 0)
-        end
-    end,
-})
+		CreateButton("Lock Base", function()
+			print("Base locked!")
+		end)
 
-MainTab:CreateToggle({
-    Name = "Anti Ragdoll",
-    Default = false,
-    Callback = function(state)
-        if state then
-            for _, v in ipairs(character:GetDescendants()) do
-                if v:IsA("BallSocketConstraint") or v:IsA("HingeConstraint") then
-                    v:Destroy()
-                end
-            end
-        end
-    end,
-})
+		CreateButton("Anti Steal", function()
+			print("Anti Steal Activated!")
+		end)
 
-MainTab:CreateToggle({
-    Name = "God Mode",
-    Default = false,
-    Callback = function(state)
-        if state then
-            humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, false)
-        else
-            humanoid:SetStateEnabled(Enum.HumanoidStateType.Dead, true)
-        end
-    end,
-})
+		CreateSlider("GUI Scale")
 
----------------------
--- Visual Tab
----------------------
-local VisualTab = Window:CreateTab("Visual", 4483362458)
+	elseif tabName == "Visual" then
+		CreateButton("Steal Helper 50", function()
+			print("Helped steal 50!")
+		end)
 
-VisualTab:CreateToggle({
-    Name = "Speed Boost",
-    Default = false,
-    Callback = function(state)
-        humanoid.WalkSpeed = state and 60 or 16
-    end,
-})
+		CreateButton("Steal Helper 100", function()
+			print("Helped steal 100!")
+		end)
 
-VisualTab:CreateToggle({
-    Name = "Jump Boost",
-    Default = false,
-    Callback = function(state)
-        humanoid.JumpPower = state and 120 or 50
-    end,
-})
+		CreateButton("Show Player", function()
+			for _, plr in ipairs(game.Players:GetPlayers()) do
+				if plr ~= Player then
+					print("Player found:", plr.Name)
+				end
+			end
+		end)
 
----------------------
--- Bonus Tab
----------------------
-local BonusTab = Window:CreateTab("Bonus", 4483362458)
+		CreateButton("Speed Booster", function()
+			Player.Character.Humanoid.WalkSpeed = 50
+		end)
 
-BonusTab:CreateToggle({
-    Name = "Noclip",
-    Default = false,
-    Callback = function(state)
-        local conn
-        if state then
-            conn = RunService.Stepped:Connect(function()
-                for _, part in pairs(character:GetDescendants()) do
-                    if part:IsA("BasePart") then
-                        part.CanCollide = false
-                    end
-                end
-            end)
-        else
-            if conn then conn:Disconnect() end
-        end
-    end,
-})
+	elseif tabName == "Bonus" then
+		CreateButton("Jump Booster", function()
+			Player.Character.Humanoid.JumpPower = 100
+		end)
+	end
+end
 
-BonusTab:CreateToggle({
-    Name = "Fly (press E to toggle)",
-    Default = false,
-    Callback = function(state)
-        flying = state
-        if flying then
-            flyVelocity = Instance.new("BodyVelocity", hrp)
-            flyGyro = Instance.new("BodyGyro", hrp)
-            flyVelocity.Velocity = Vector3.zero
-            flyVelocity.MaxForce = Vector3.new(1e5, 1e5, 1e5)
-            flyGyro.MaxTorque = Vector3.new(1e5, 1e5, 1e5)
-            flyGyro.CFrame = hrp.CFrame
-            UserInputService.InputBegan:Connect(function(input)
-                if input.KeyCode == Enum.KeyCode.E then
-                    flying = not flying
-                    if not flying then
-                        if flyVelocity then flyVelocity:Destroy() end
-                        if flyGyro then flyGyro:Destroy() end
-                    end
-                end
-            end)
-            RunService.Heartbeat:Connect(function()
-                if flying and flyVelocity and flyGyro then
-                    local cam = workspace.CurrentCamera.CFrame
-                    flyVelocity.Velocity = cam.LookVector * 70
-                    flyGyro.CFrame = cam
-                end
-            end)
-        else
-            if flyVelocity then flyVelocity:Destroy() end
-            if flyGyro then flyGyro:Destroy() end
-        end
-    end,
-})
+--// Tab Click Events
+for tabName, button in pairs(Buttons) do
+	button.MouseButton1Click:Connect(function()
+		OpenTab(tabName)
+	end)
+end
+
+-- Default to open Main tab
+OpenTab("Main")
