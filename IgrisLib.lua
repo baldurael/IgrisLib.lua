@@ -1,127 +1,142 @@
---// GUI Setup
-local Player = game.Players.LocalPlayer
-local ScreenGui = Instance.new("ScreenGui", Player:WaitForChild("PlayerGui"))
-ScreenGui.Name = "CustomHub"
+-- GUI Custom Tanpa Library oleh Mang Nathan
 
-local MainFrame = Instance.new("Frame", ScreenGui)
-MainFrame.Size = UDim2.new(0, 500, 0, 300)
-MainFrame.Position = UDim2.new(0.5, -250, 0.5, -150)
-MainFrame.BackgroundColor3 = Color3.fromRGB(35, 35, 35)
-MainFrame.BorderSizePixel = 0
-MainFrame.Active = true
-MainFrame.Draggable = true
+-- Buat ScreenGui utama
+local gui = Instance.new("ScreenGui", game.Players.LocalPlayer:WaitForChild("PlayerGui"))
+gui.Name = "IgrisCustomGUI"
+gui.ResetOnSpawn = false
 
-local Tabs = {"Main", "Visual", "Bonus"}
-local Buttons = {}
-local ContentFrame = Instance.new("Frame", MainFrame)
-ContentFrame.Size = UDim2.new(1, -100, 1, -10)
-ContentFrame.Position = UDim2.new(0, 90, 0, 10)
-ContentFrame.BackgroundColor3 = Color3.fromRGB(45, 45, 45)
-ContentFrame.BorderSizePixel = 0
+-- Tombol buka/tutup GUI
+local toggleBtn = Instance.new("ImageButton")
+toggleBtn.Name = "ToggleGUI"
+toggleBtn.Size = UDim2.new(0, 50, 0, 50)
+toggleBtn.Position = UDim2.new(0, 20, 0.5, -25)
+toggleBtn.Image = "rbxassetid://89064255145708"
+toggleBtn.BackgroundTransparency = 1
+toggleBtn.Draggable = true
+toggleBtn.Parent = gui
 
---// Tab Buttons
-for i, tabName in ipairs(Tabs) do
-	local TabBtn = Instance.new("TextButton", MainFrame)
-	TabBtn.Size = UDim2.new(0, 80, 0, 30)
-	TabBtn.Position = UDim2.new(0, 5, 0, 10 + (i - 1) * 35)
-	TabBtn.Text = tabName
-	TabBtn.BackgroundColor3 = Color3.fromRGB(60, 60, 60)
-	TabBtn.TextColor3 = Color3.new(1, 1, 1)
-	TabBtn.BorderSizePixel = 0
+-- Frame utama GUI
+local mainFrame = Instance.new("Frame")
+mainFrame.Name = "MainFrame"
+mainFrame.Size = UDim2.new(0, 400, 0, 300)
+mainFrame.Position = UDim2.new(0.5, -200, 0.5, -150)
+mainFrame.BackgroundColor3 = Color3.fromRGB(20, 20, 30)
+mainFrame.BorderSizePixel = 0
+mainFrame.Visible = true
+mainFrame.AnchorPoint = Vector2.new(0.5, 0.5)
+mainFrame.Parent = gui
 
-	Buttons[tabName] = TabBtn
+-- Drag support untuk frame
+local drag = Instance.new("LocalScript", mainFrame)
+drag.Source = [[
+local UIS = game:GetService("UserInputService")
+local frame = script.Parent
+
+local dragging, dragInput, dragStart, startPos
+
+local function update(input)
+	local delta = input.Position - dragStart
+	frame.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X,
+		startPos.Y.Scale, startPos.Y.Offset + delta.Y)
 end
 
---// Utility
-function ClearContent()
-	for _, child in ipairs(ContentFrame:GetChildren()) do
-		if not child:IsA("UIListLayout") then
-			child:Destroy()
-		end
-	end
-end
+frame.InputBegan:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseButton1 then
+		dragging = true
+		dragStart = input.Position
+		startPos = frame.Position
 
-function CreateButton(name, callback)
-	local Btn = Instance.new("TextButton", ContentFrame)
-	Btn.Size = UDim2.new(1, -10, 0, 30)
-	Btn.Text = name
-	Btn.BackgroundColor3 = Color3.fromRGB(80, 80, 80)
-	Btn.TextColor3 = Color3.new(1,1,1)
-	Btn.BorderSizePixel = 0
-	Btn.MouseButton1Click:Connect(callback)
-end
-
---// GUI Scale Slider
-local function CreateSlider(name)
-	local Text = Instance.new("TextLabel", ContentFrame)
-	Text.Text = name
-	Text.Size = UDim2.new(1, -10, 0, 20)
-	Text.TextColor3 = Color3.new(1,1,1)
-	Text.BackgroundTransparency = 1
-
-	local Slider = Instance.new("TextButton", ContentFrame)
-	Slider.Size = UDim2.new(1, -10, 0, 30)
-	Slider.Text = "Adjust GUI Scale"
-	Slider.BackgroundColor3 = Color3.fromRGB(100, 100, 100)
-	Slider.TextColor3 = Color3.new(1,1,1)
-	Slider.MouseButton1Click:Connect(function()
-		MainFrame.Size = MainFrame.Size + UDim2.new(0, 20, 0, 20)
-	end)
-end
-
---// Tab Functions
-local function OpenTab(tabName)
-	ClearContent()
-
-	if tabName == "Main" then
-		CreateButton("Exit", function()
-			ScreenGui:Destroy()
-		end)
-
-		CreateButton("Lock Base", function()
-			print("Base locked!")
-		end)
-
-		CreateButton("Anti Steal", function()
-			print("Anti Steal Activated!")
-		end)
-
-		CreateSlider("GUI Scale")
-
-	elseif tabName == "Visual" then
-		CreateButton("Steal Helper 50", function()
-			print("Helped steal 50!")
-		end)
-
-		CreateButton("Steal Helper 100", function()
-			print("Helped steal 100!")
-		end)
-
-		CreateButton("Show Player", function()
-			for _, plr in ipairs(game.Players:GetPlayers()) do
-				if plr ~= Player then
-					print("Player found:", plr.Name)
-				end
+		input.Changed:Connect(function()
+			if input.UserInputState == Enum.UserInputState.End then
+				dragging = false
 			end
 		end)
-
-		CreateButton("Speed Booster", function()
-			Player.Character.Humanoid.WalkSpeed = 50
-		end)
-
-	elseif tabName == "Bonus" then
-		CreateButton("Jump Booster", function()
-			Player.Character.Humanoid.JumpPower = 100
-		end)
 	end
-end
+end)
 
---// Tab Click Events
-for tabName, button in pairs(Buttons) do
-	button.MouseButton1Click:Connect(function()
-		OpenTab(tabName)
+frame.InputChanged:Connect(function(input)
+	if input.UserInputType == Enum.UserInputType.MouseMovement then
+		dragInput = input
+	end
+end)
+
+UIS.InputChanged:Connect(function(input)
+	if input == dragInput and dragging then
+		update(input)
+	end
+end)
+]]
+
+-- Fungsi buka/tutup GUI
+local toggleScript = Instance.new("LocalScript", toggleBtn)
+toggleScript.Source = [[
+local btn = script.Parent
+local gui = btn.Parent:WaitForChild("MainFrame")
+
+btn.MouseButton1Click:Connect(function()
+	gui.Visible = not gui.Visible
+end)
+]]
+
+-- Tab buttons
+local tabHolder = Instance.new("Frame")
+tabHolder.Size = UDim2.new(1, 0, 0, 30)
+tabHolder.BackgroundColor3 = Color3.fromRGB(30, 30, 40)
+tabHolder.BorderSizePixel = 0
+tabHolder.Parent = mainFrame
+
+local tabs = {"Main", "Bonus"}
+local pages = {}
+
+for i, name in ipairs(tabs) do
+	local btn = Instance.new("TextButton")
+	btn.Size = UDim2.new(0, 80, 1, 0)
+	btn.Position = UDim2.new(0, (i-1)*90, 0, 0)
+	btn.Text = name
+	btn.BackgroundColor3 = Color3.fromRGB(40, 40, 60)
+	btn.TextColor3 = Color3.fromRGB(180, 180, 255)
+	btn.Parent = tabHolder
+
+	local page = Instance.new("Frame")
+	page.Size = UDim2.new(1, 0, 1, -30)
+	page.Position = UDim2.new(0, 0, 0, 30)
+	page.BackgroundTransparency = 1
+	page.Visible = (i == 1)
+	page.Parent = mainFrame
+	pages[name] = page
+
+	btn.MouseButton1Click:Connect(function()
+		for n, p in pairs(pages) do
+			p.Visible = false
+		end
+		page.Visible = true
 	end)
 end
 
--- Default to open Main tab
-OpenTab("Main")
+-- Main Tab Content
+local speedBtn = Instance.new("TextButton")
+speedBtn.Size = UDim2.new(0, 200, 0, 40)
+speedBtn.Position = UDim2.new(0.5, -100, 0, 20)
+speedBtn.Text = "Speed Booster"
+speedBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+speedBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+speedBtn.Parent = pages["Main"]
+
+speedBtn.MouseButton1Click:Connect(function()
+	local h = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+	if h then h.WalkSpeed = 50 end
+end)
+
+-- Bonus Tab Content
+local jumpBtn = Instance.new("TextButton")
+jumpBtn.Size = UDim2.new(0, 200, 0, 40)
+jumpBtn.Position = UDim2.new(0.5, -100, 0, 20)
+jumpBtn.Text = "Jump Booster"
+jumpBtn.BackgroundColor3 = Color3.fromRGB(50, 50, 80)
+jumpBtn.TextColor3 = Color3.fromRGB(255, 255, 255)
+jumpBtn.Parent = pages["Bonus"]
+
+jumpBtn.MouseButton1Click:Connect(function()
+	local h = game.Players.LocalPlayer.Character:FindFirstChildOfClass("Humanoid")
+	if h then h.JumpPower = 100 end
+end)
